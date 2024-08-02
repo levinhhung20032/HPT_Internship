@@ -425,3 +425,27 @@ Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các c�
 ![alt text](images/17.png)
 
 11. Sử dụng thông tin này để đăng nhập, ứng dụng sau đó sẽ trả về thông báo hoàn thành bài lab.
+
+# Lấy nhiều giá trị trong một cột
+
+Trong một số trường hợp, truy vấn trong ví dụ trước có thể chỉ trả về một cột duy nhất.
+
+Bạn có thể lấy nhiều giá trị trong cột này bằng cách kết hợp các giá trị lại với nhau. Bạn có thể thêm một ký tự phân cách để dễ dàng nhận biết các giá trị đã kết hợp. Ví dụ, trên Oracle bạn có thể gửi truy vấn:
+
+```sql
+' UNION SELECT username || '~' || password FROM users--
+```
+
+Điều này sử dụng chuỗi dấu gạch đôi `||`, là toán tử kết hợp chuỗi trên Oracle. Truy vấn chèn kết hợp các giá trị của các trường `username` và `password`, được ngăn cách bởi ký tự ~.
+
+Kết quả từ truy vấn sẽ chứa tất cả các tên người dùng và mật khẩu, ví dụ:
+
+```
+...
+administrator~s3cure
+wiener~peter
+carlos~montoya
+...
+```
+
+Các cơ sở dữ liệu khác nhau sử dụng cú pháp khác nhau để thực hiện kết hợp chuỗi. Để biết thêm chi tiết, xem bảng cheat sheet về SQL injection.
