@@ -410,7 +410,7 @@ Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các c�
 ![alt text](images/15.png)
 
 8. Trong ví dụ này, khi dừng ở `'+UNION+SELECT+NULL,NULL--`, ứng dụng đã không trả về lỗi. Từ đó có thể xác định được dữ liệu trả về có 2 cột.
-9. Lần lượt thay thế các giá trị `NULL` bằng giá trị bài lab yêu cầu để kiềm tra cột có thể can thiệp. Sau khi thay vào cả 2 giá trị `NULL`, ứng dụng vẫn không trả về lỗi.
+9. Lần lượt thay thế các giá trị `NULL` bằng giá trị bài lab yêu cầu để kiểm tra cột có thể can thiệp. Sau khi thay vào cả 2 giá trị `NULL`, ứng dụng vẫn không trả về lỗi.
 
 ![alt text](images/16.png)
 
@@ -449,3 +449,220 @@ carlos~montoya
 ```
 
 Các cơ sở dữ liệu khác nhau sử dụng cú pháp khác nhau để thực hiện kết hợp chuỗi. Để biết thêm chi tiết, xem bảng cheat sheet về SQL injection.
+
+# Lab: SQL injection UNION attack, retrieving multiple values in a single column
+
+## Mô tả bài lab
+
+Bài lab này chứa một lỗ hổng SQL injection trong bộ lọc danh mục sản phẩm. Kết quả từ truy vấn được trả về trong phản hồi của ứng dụng, vì vậy bạn có thể sử dụng một cuộc tấn công UNION để truy xuất dữ liệu từ các bảng khác.
+
+Cơ sở dữ liệu chứa một bảng khác gọi là users, với các cột username và password.
+
+Để giải quyết bài lab, hãy thực hiện một cuộc tấn công SQL injection UNION để truy xuất tất cả các tên người dùng và mật khẩu, sau đó sử dụng thông tin này để đăng nhập dưới tư cách người quản trị.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![resize](images/18.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một filter bất kỳ để nhận gói tin, ở đây tôi chọn *Accessories*
+5. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Repeater* và chuyển sang tab **Repeater**.
+
+![alt text](images/19.png)
+
+6. Trước hết, ta cần xác định số cột thông tin được trả về. Để làm điều đó ta có thể thay giá trị của `categories` thành `'+UNION+SELECT+NULL--`.
+7. Chọn **Send** để gửi gói tin, trong trường hợp ứng dụng trả về lỗi `Internal Server Error`, tiếp tục thêm `,NULL` vào phía sau giá trị `NULL` trước đó và thử lại.
+
+![alt text](images/20.png)
+
+8. Trong ví dụ này, khi dừng ở `'+UNION+SELECT+NULL,NULL--`, ứng dụng đã không trả về lỗi. Từ đó có thể xác định được dữ liệu trả về có 2 cột.
+9. Lần lượt thay thế các giá trị `NULL` bằng giá trị bài lab yêu cầu để kiểm tra cột có thể can thiệp. Sau khi thay vào từng giá trị `NULL`, ứng dụng vẫn không trả về lỗi ở giá trị `NULL` thứ 2.
+
+![alt text](images/21.png)
+
+10. Theo yêu cầu bài lab, ta cần lấy giá trị của các cột `username` và `password` từ bảng `users`. Ta sẽ sử dụng gói tin như sau:
+
+```
+'+UNION+SELECT+NULL,username+||+'~'+||+password+FROM+users--
+```
+
+10. Sao chép toàn bộ nội dung gói tin, sau đó quay lại tab **Proxy** và thay thế nội dung hiện tại bằng nội dung vừa được sao chép, sau đó chọn **Forward**. Ứng dụng sẽ trả về thông tin đăng nhập của các người dùng, bao gồm cả `administrator`.
+
+![alt text](images/22.png)
+
+11. Sử dụng thông tin này để đăng nhập, ứng dụng sau đó sẽ trả về thông báo hoàn thành bài lab.
+
+# Khám phá cơ sở dữ liệu trong các cuộc tấn công SQL injection
+
+Để khai thác các lỗ hổng SQL injection, thường cần phải tìm thông tin về cơ sở dữ liệu. Điều này bao gồm:
+
+- Loại và phiên bản của phần mềm cơ sở dữ liệu.
+- Các bảng và cột mà cơ sở dữ liệu chứa.
+
+# Querying the database type and version
+Bạn có thể xác định cả loại và phiên bản cơ sở dữ liệu bằng cách tiêm các truy vấn cụ thể cho từng nhà cung cấp để xem truy vấn nào hoạt động.
+
+Dưới đây là một số truy vấn để xác định phiên bản cơ sở dữ liệu cho một số loại cơ sở dữ liệu phổ biến:
+
+| Loại cơ sở dữ liệu  | Truy vấn                    |
+| ------------------- | --------------------------- |
+| Microsoft, MySQL    | `SELECT @@version`          |
+| Oracle              | `SELECT * FROM v$version`   |
+| PostgreSQL          | `SELECT version()`          |
+
+Ví dụ, bạn có thể sử dụng một cuộc tấn công UNION với đầu vào sau:
+
+```
+' UNION SELECT @@version--
+```
+
+Điều này có thể trả về kết quả sau. Trong trường hợp này, bạn có thể xác nhận rằng cơ sở dữ liệu là Microsoft SQL Server và thấy phiên bản được sử dụng.
+
+```
+Microsoft SQL Server 2016 (SP2) (KB4052908) - 13.0.5026.0 (X64)
+Mar 18 2018 09:11:49
+Copyright (c) Microsoft Corporation
+Standard Edition (64-bit) on Windows Server 2016 Standard 10.0 <X64> (Build 14393: ) (Hypervisor)
+```
+
+# Lab: SQL injection attack, querying the database type and version on MySQL and Microsoft
+
+## Mô tả bài lab
+
+Bài lab này chứa một lỗ hổng SQL injection trong bộ lọc danh mục sản phẩm. Bạn có thể sử dụng một cuộc tấn công UNION để truy xuất kết quả từ một truy vấn được tiêm vào.
+
+Để giải quyết bài lab, hãy hiển thị chuỗi phiên bản cơ sở dữ liệu.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![resize](images/23.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một filter bất kỳ để nhận gói tin, ở đây tôi chọn *Gifts*
+5. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Repeater* và chuyển sang tab **Repeater**.
+
+![alt text](images/24.png)
+
+6. Trước hết, ta cần xác định số cột thông tin được trả về. Để làm điều đó ta có thể thay giá trị của `categories` thành `'+UNION+SELECT+NULL#` (ta sử dụng `#` vì đang thực hiện tấn công lên database sử dụng MySQL).
+7. Chọn **Send** để gửi gói tin, trong trường hợp ứng dụng trả về lỗi `Internal Server Error`, tiếp tục thêm `,NULL` vào phía sau giá trị `NULL` trước đó và thử lại.
+
+![alt text](images/25.png)
+
+8. Trong ví dụ này, khi dừng ở `'+UNION+SELECT+NULL,NULL#`, ứng dụng đã không trả về lỗi. Từ đó có thể xác định được dữ liệu trả về có 2 cột.
+9. Lần lượt thay thế các giá trị `NULL` bằng giá trị bài lab yêu cầu để kiểm tra cột có thể can thiệp. Sau khi thay vào từng giá trị `NULL`, ứng dụng không trả về lỗi ở giá trị `NULL` đầu tiên.
+
+![alt text](images/26.png)
+
+10. Theo yêu cầu bài lab, ta cần lấy thông tin về phiên bản của cơ sở dữ liệu. Ta sẽ sử dụng gói tin như sau:
+
+```
+'+UNION+SELECT+@@version,NULL#
+```
+
+10. Sao chép toàn bộ nội dung gói tin, sau đó quay lại tab **Proxy** và thay thế nội dung hiện tại bằng nội dung vừa được sao chép, sau đó chọn **Forward**. Ứng dụng sẽ trả về thông tin phiên bản của cơ sở dữ liệu và thông báo hoàn thành bài lab.
+
+# Liệt kê nội dung của cơ sở dữ liệu
+Hầu hết các loại cơ sở dữ liệu (ngoại trừ Oracle) đều có một tập hợp các khung nhìn được gọi là information schema. Điều này cung cấp thông tin về cơ sở dữ liệu.
+
+Ví dụ, bạn có thể truy vấn information_schema.tables để liệt kê các bảng trong cơ sở dữ liệu:
+
+```sql
+SELECT * FROM information_schema.tables
+```
+
+Lệnh này trả về kết quả như sau:
+
+```plaintext
+TABLE_CATALOG  TABLE_SCHEMA  TABLE_NAME  TABLE_TYPE
+=====================================================
+MyDatabase     dbo           Products    BASE TABLE
+MyDatabase     dbo           Users       BASE TABLE
+MyDatabase     dbo           Feedback    BASE TABLE
+```
+
+Kết quả này cho thấy có ba bảng, được gọi là Products, Users và Feedback.
+
+Bạn có thể truy vấn information_schema.columns để liệt kê các cột trong từng bảng:
+
+```sql
+SELECT * FROM information_schema.columns WHERE table_name = 'Users'
+```
+
+Lệnh này trả về kết quả như sau:
+
+```plaintext
+TABLE_CATALOG  TABLE_SCHEMA  TABLE_NAME  COLUMN_NAME  DATA_TYPE
+=================================================================
+MyDatabase     dbo           Users       UserId       int
+MyDatabase     dbo           Users       Username     varchar
+MyDatabase     dbo           Users       Password     varchar
+```
+
+Kết quả này cho thấy các cột trong bảng được chỉ định và kiểu dữ liệu của từng cột.
+
+# Lab: SQL injection attack, listing the database contents on non-Oracle databases
+
+## Mô tả bài lab
+
+Phòng thí nghiệm này chứa một lỗ hổng SQL injection trong bộ lọc danh mục sản phẩm. Kết quả từ truy vấn được trả về trong phản hồi của ứng dụng, vì vậy bạn có thể sử dụng tấn công UNION để truy xuất dữ liệu từ các bảng khác.
+
+Ứng dụng có chức năng đăng nhập, và cơ sở dữ liệu chứa một bảng giữ tên người dùng và mật khẩu. Bạn cần xác định tên của bảng này và các cột mà nó chứa, sau đó truy xuất nội dung của bảng để lấy tên người dùng và mật khẩu của tất cả người dùng.
+
+Để giải quyết phòng thí nghiệm, hãy đăng nhập với tư cách `administrator`.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![resize](images/27.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một filter bất kỳ để nhận gói tin, ở đây tôi chọn *Accessories*
+5. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Repeater* và chuyển sang tab **Repeater**.
+
+![alt text](images/28.png)
+
+6. Trước hết, ta cần xác định số cột thông tin được trả về. Để làm điều đó ta có thể thay giá trị của `categories` thành `'+UNION+SELECT+NULL--`.
+7. Chọn **Send** để gửi gói tin, trong trường hợp ứng dụng trả về lỗi `Internal Server Error`, tiếp tục thêm `,NULL` vào phía sau giá trị `NULL` trước đó và thử lại.
+
+![alt text](images/25.png)
+
+8. Trong ví dụ này, khi dừng ở `'+UNION+SELECT+NULL,NULL--`, ứng dụng đã không trả về lỗi. Từ đó có thể xác định được dữ liệu trả về có 2 cột.
+9. Lần lượt thay thế các giá trị `NULL` bằng giá trị bài lab yêu cầu để kiểm tra cột có thể can thiệp. Sau khi thay vào từng giá trị `NULL`, ứng dụng không trả về lỗi ở cả 2 giá trị `NULL`.
+
+![alt text](images/29.png)
+
+10. Theo yêu cầu bài lab, ta cần lấy thông tin về phiên bản của cơ sở dữ liệu. Ta sẽ sử dụng gói tin như sau:
+
+```
+'+UNION+SELECT+table_name,NULL+FROM+information_schema.tables--
+```
+
+10. Sao chép toàn bộ nội dung gói tin, sau đó quay lại tab **Proxy** và thay thế nội dung hiện tại bằng nội dung vừa được sao chép, sau đó chọn **Forward**.
+
+![alt text](images/30.png)
+
+11. Ta phát hiện được bảng `users_olbyfk` có thể có thông tin nhạy cảm, tiếp tục thực hiện truy vấn vào bảng này. Ta chọn một bộ lọc bất kỳ để tạo một truy vấn mới, thay giá trị của `category` và chọn **Forward**:
+
+
+```
+'+UNION+SELECT+column_name,NULL+FROM+information_schema.columns+WHERE+table_name='users_olbyfk'--
+```
+
+12. Lần này ta phát hiện được cột `username_rzmmxj` và `password_lxongs` có thể chứa thông tin nhạy cảm, tiếp tục tấn công tương tự như bước 11. bằng gói tin như sau:
+
+
+```
+'+UNION+SELECT+username_rzmmxj,password_lxongs+FROM+users_olbyfk--
+```
+
+13. Ứng dụng sẽ trả về thông tin đăng nhập của người dùng, bao gồm cả `administrator`. Sử dụng thông tin này để đăng nhập và ứng dụng sẽ thông báo hoàn thành bài lab.
+
+![alt text](images/31.png)
