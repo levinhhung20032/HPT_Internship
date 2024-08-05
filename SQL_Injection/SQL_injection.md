@@ -152,7 +152,7 @@ Truy vấn này sẽ trả về người dùng có tên đăng nhập là admini
 
 Bài lab này chứa một lỗ hổng SQL injection trong chức năng đăng nhập.
 
-Để giải quyết bài lab, thực hiện một cuộc tấn công SQL injection để đăng nhập vào ứng dụng với tư cách là người dùng quản trị viên.
+Để giải quyết bài lab, thực hiện một cuộc tấn công SQL injection để đăng nhập vào ứng dụng với tư cách là người dùng `administrator`.
 
 ## Các bước thực hiện
 
@@ -610,11 +610,11 @@ Kết quả này cho thấy các cột trong bảng được chỉ định và k
 
 ## Mô tả bài lab
 
-Phòng thí nghiệm này chứa một lỗ hổng SQL injection trong bộ lọc danh mục sản phẩm. Kết quả từ truy vấn được trả về trong phản hồi của ứng dụng, vì vậy bạn có thể sử dụng tấn công UNION để truy xuất dữ liệu từ các bảng khác.
+Bài lab này chứa một lỗ hổng SQL injection trong bộ lọc danh mục sản phẩm. Kết quả từ truy vấn được trả về trong phản hồi của ứng dụng, vì vậy bạn có thể sử dụng tấn công UNION để truy xuất dữ liệu từ các bảng khác.
 
 Ứng dụng có chức năng đăng nhập, và cơ sở dữ liệu chứa một bảng giữ tên người dùng và mật khẩu. Bạn cần xác định tên của bảng này và các cột mà nó chứa, sau đó truy xuất nội dung của bảng để lấy tên người dùng và mật khẩu của tất cả người dùng.
 
-Để giải quyết phòng thí nghiệm, hãy đăng nhập với tư cách `administrator`.
+Để giải quyết bài lab, hãy đăng nhập với tư cách `administrator`.
 
 ## Các bước thực hiện
 
@@ -645,24 +645,161 @@ Phòng thí nghiệm này chứa một lỗ hổng SQL injection trong bộ lọ
 '+UNION+SELECT+table_name,NULL+FROM+information_schema.tables--
 ```
 
-10. Sao chép toàn bộ nội dung gói tin, sau đó quay lại tab **Proxy** và thay thế nội dung hiện tại bằng nội dung vừa được sao chép, sau đó chọn **Forward**.
+11. Sao chép toàn bộ nội dung gói tin, sau đó quay lại tab **Proxy** và thay thế nội dung hiện tại bằng nội dung vừa được sao chép, sau đó chọn **Forward**.
 
 ![alt text](images/30.png)
 
-11. Ta phát hiện được bảng `users_olbyfk` có thể có thông tin nhạy cảm, tiếp tục thực hiện truy vấn vào bảng này. Ta chọn một bộ lọc bất kỳ để tạo một truy vấn mới, thay giá trị của `category` và chọn **Forward**:
+12. Ta phát hiện được bảng `users_olbyfk` có thể có thông tin nhạy cảm, tiếp tục thực hiện truy vấn vào bảng này. Ta chọn một bộ lọc bất kỳ để tạo một truy vấn mới, thay giá trị của `category` và chọn **Forward**:
 
 
 ```
 '+UNION+SELECT+column_name,NULL+FROM+information_schema.columns+WHERE+table_name='users_olbyfk'--
 ```
 
-12. Lần này ta phát hiện được cột `username_rzmmxj` và `password_lxongs` có thể chứa thông tin nhạy cảm, tiếp tục tấn công tương tự như bước 11. bằng gói tin như sau:
+13. Lần này ta phát hiện được cột `username_rzmmxj` và `password_lxongs` có thể chứa thông tin nhạy cảm, tiếp tục tấn công tương tự như bước 11. bằng gói tin như sau:
 
 
 ```
 '+UNION+SELECT+username_rzmmxj,password_lxongs+FROM+users_olbyfk--
 ```
 
-13. Ứng dụng sẽ trả về thông tin đăng nhập của người dùng, bao gồm cả `administrator`. Sử dụng thông tin này để đăng nhập và ứng dụng sẽ thông báo hoàn thành bài lab.
+14. Ứng dụng sẽ trả về thông tin đăng nhập của người dùng, bao gồm cả `administrator`. Sử dụng thông tin này để đăng nhập và ứng dụng sẽ thông báo hoàn thành bài lab.
 
 ![alt text](images/31.png)
+
+# Blind SQL Injection
+
+Trong phần này, chúng tôi mô tả các kỹ thuật để tìm kiếm và khai thác các lỗ hổng blind SQL injection.
+
+# SQL Injection mù là gì?
+
+SQL Injection mù xảy ra khi một ứng dụng bị lỗ hổng SQL injection, nhưng các phản hồi HTTP của nó không chứa kết quả của truy vấn SQL liên quan hoặc chi tiết của bất kỳ lỗi cơ sở dữ liệu nào.
+
+Nhiều kỹ thuật như tấn công UNION không hiệu quả với lỗ hổng SQL injection mù. Điều này là do chúng dựa vào khả năng xem kết quả của truy vấn đã chèn trong các phản hồi của ứng dụng. Tuy nhiên, vẫn có thể khai thác SQL injection mù để truy cập dữ liệu trái phép, nhưng cần sử dụng các kỹ thuật khác.
+
+# Khai thác SQL injection mù bằng cách kích hoạt phản hồi có điều kiện
+
+Hãy xem xét một ứng dụng sử dụng cookie theo dõi để thu thập phân tích về việc sử dụng. Các yêu cầu đến ứng dụng bao gồm một tiêu đề cookie như sau:
+```
+Cookie: TrackingId=u5YD3PapBcR4lN3e7Tj4
+```
+Khi một yêu cầu chứa cookie TrackingId được xử lý, ứng dụng sử dụng một truy vấn SQL để xác định xem đây có phải là người dùng đã biết hay không:
+
+```sql
+SELECT TrackingId FROM TrackedUsers WHERE TrackingId = 'u5YD3PapBcR4lN3e7Tj4'
+```
+
+Truy vấn này có lỗ hổng SQL injection, nhưng kết quả từ truy vấn không được trả về cho người dùng. Tuy nhiên, ứng dụng có hành vi khác nhau tùy thuộc vào việc truy vấn có trả về dữ liệu hay không. Nếu bạn gửi một TrackingId được nhận dạng, truy vấn sẽ trả về dữ liệu và bạn nhận được thông báo "Welcome back" trong phản hồi.
+
+Hành vi này đủ để khai thác lỗ hổng SQL injection mù. Bạn có thể truy xuất thông tin bằng cách kích hoạt các phản hồi khác nhau có điều kiện, tùy thuộc vào điều kiện đã chèn.
+
+Để hiểu cách khai thác này hoạt động, giả sử rằng hai yêu cầu được gửi với các giá trị cookie TrackingId sau lần lượt:
+
+```
+…xyz' AND '1'='1
+…xyz' AND '1'='2
+```
+
+Giá trị đầu tiên khiến truy vấn trả về kết quả, vì điều kiện chèn AND '1'='1 là đúng. Do đó, thông báo "Welcome back" được hiển thị.
+
+Giá trị thứ hai khiến truy vấn không trả về kết quả, vì điều kiện chèn là sai. Thông báo "Welcome back" không được hiển thị.
+
+Điều này cho phép chúng ta xác định câu trả lời cho bất kỳ điều kiện chèn nào và trích xuất dữ liệu từng phần một.
+
+Ví dụ, giả sử có một bảng tên là Users với các cột Username và Password, và có một người dùng tên là Administrator. Bạn có thể xác định mật khẩu cho người dùng này bằng cách gửi một loạt các đầu vào để kiểm tra mật khẩu từng ký tự một.
+
+Để làm điều này, bắt đầu với đầu vào sau:
+
+```sql
+xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) > 'm'
+```
+
+Điều này trả về thông báo "Welcome back", cho thấy điều kiện chèn là đúng, do đó ký tự đầu tiên của mật khẩu lớn hơn 'm'.
+
+Tiếp theo, chúng tôi gửi đầu vào sau:
+
+```sql
+xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) > 't'
+```
+
+Điều này không trả về thông báo "Welcome back", cho thấy điều kiện chèn là sai, do đó ký tự đầu tiên của mật khẩu không lớn hơn 't'.
+
+Cuối cùng, chúng tôi gửi đầu vào sau, trả về thông báo "Welcome back", do đó xác nhận rằng ký tự đầu tiên của mật khẩu là 's':
+
+```sql
+xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) = 's'
+```
+
+Chúng ta có thể tiếp tục quy trình này để xác định một cách hệ thống toàn bộ mật khẩu cho người dùng Administrator.
+
+> ## Lưu ý
+> Hàm SUBSTRING được gọi là SUBSTR trên một số loại cơ sở dữ liệu. Để biết thêm chi tiết, hãy xem bảng cheat sheet về SQL injection.
+
+# Lab: Blind SQL injection with conditional responses
+
+## Mô tả bài lab
+
+Bài lab này chứa một lỗ hổng SQL injection mù. Ứng dụng sử dụng một cookie theo dõi cho phân tích và thực hiện một truy vấn SQL chứa giá trị của cookie đã gửi.
+
+Kết quả của truy vấn SQL không được trả về và không có thông báo lỗi nào được hiển thị. Nhưng ứng dụng bao gồm một thông báo "Welcome back" trên trang nếu truy vấn trả về bất kỳ hàng nào.
+
+Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột `username` và `password`. Bạn cần khai thác lỗ hổng SQL injection mù để tìm ra mật khẩu của người dùng `administrator`.
+
+Để giải quyết bài lab, hãy đăng nhập như người dùng `administrator`.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![resize](images/32.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một filter bất kỳ để nhận gói tin, ở đây tôi chọn *Accessories*
+5. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Intruder* và chuyển sang tab **Intruder**.
+
+![alt text](images/33.png)
+
+6. Xác nhận rằng ứng dụng đang gán `TrackingId` cho chúng ta là `TAqC1EGZkomvZwB1`, ta có thể thêm vào sau đó một số thông tin để thực hiện tấn công SQL injection. Bài lab đã cho chúng ta biết trong cơ sở dữ liệu của ứng dụng có một bảng `users` có chứa cột `username` và `password`, từ đây ta có thể thực hiện tấn công bằng gói tin như sau để xác định độ dài mật khẩu của người dùng `administrator`:
+```
+'+AND+(SELECT+'a'+FROM+users+where+username='administrator'+AND+LENGTH(password)>§§)='a
+```
+7. Chuyển sang tab **Payloads** để chỉnh sửa gói tin truyền vào mỗi lần thực hiện tấn công. Chọn *Payload type* là `Numbers` và điều chỉnh cho thông tin truyền vào sẽ chạy từ 0 đến 30.
+
+![alt text](images/34.png)
+
+8. Chuyển sang tab **Settings** và di chuyển tới *Grep - Match*, chọn *Flag result...* để đánh dấu các kết quả có từ trùng khớp, sau đó chọn *Clear>Yes* để xoá toàn bộ thông tin hiện có trong danh sách, cuối cùng thêm vào `Welcome back!`. Chọn **Start attack** để bắt đầu thực hiện tấn công.
+
+9. Bảng kết quả sẽ xuất hiện và hiển thị độ dài của phản hồi trong mỗi lần gửi. Ta có thể thấy độ dài này thay đổi khi tham số truyền vào lớn hơn 19, có thể kết luận độ dài mật khẩu là 20.
+
+![alt text](images/35.png)
+
+10. Sau khi biết được độ dài của mật khẩu, ta sẽ thực hiện Brute Force mật khẩu chính xác của người dùng `administrator`. Được biết mật khẩu sẽ chỉ chứa chữ cái thường và chữ số, ta chuyển về tab **Positions** sử dụng gói tin như sau để tấn công:
+
+```
+'+AND+(SELECT+SUBSTRING(password,§§,1)+FROM+users+where+username='administrator')='§§
+```
+
+11. Lần này, ta sẽ chọn *Attack type* là `Cluster bomb` để thực hiện tấn công vào 2 vị trí payload (ký hiệu §§) cùng 1 lúc. Chuyển qua tab **Payloads**, ở *Payload set* đầu tiên, ta sẽ chọn *Payload type* là `Numbers` chạy từ 1 đến 20 để duyệt toàn bộ vị trí của mật khẩu. Ở *Payload set* thứ 2, ta sẽ chọn *Payload type* là `Brute forcer`, chọn *Min length* và *Max length* là 1, sau đó chọn **Start attack** để thực hiện tấn công.
+12. Với bảng thông tin được hiển thị, chuột phải vào *Payload 1* và chọn *Sort>Ascending*, sau đó chuột phải vào *Payload 2* và chọn *Sort>Descending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `qfmf8cj7yk08tzuhcqnh`.
+
+![alt text](images/37.png)
+
+13. Quay trở lại tab **Proxy**, chọn **Intercept is on** để chuyển nó về **Intercept is off**, sau đó chọn *My account* để mở giao diện đăng nhập. Sử dụng tên người dùng là `administrator` và mật khẩu là `qfmf8cj7yk08tzuhcqnh`. Sau khi đăng nhập thành công, ứng dụng sẽ thông báo hoàn thành bài lab.
+
+![alt text](images/38.png)
+
+## Error-based SQL injection
+
+Error-based SQL injection đề cập đến các trường hợp mà bạn có thể sử dụng thông báo lỗi để trích xuất hoặc suy ra dữ liệu nhạy cảm từ cơ sở dữ liệu, ngay cả trong các ngữ cảnh mù (blind contexts). Khả năng này phụ thuộc vào cấu hình của cơ sở dữ liệu và các loại lỗi mà bạn có thể kích hoạt:
+
+- Bạn có thể khiến ứng dụng trả về một phản hồi lỗi cụ thể dựa trên kết quả của một biểu thức boolean. Bạn có thể khai thác điều này theo cách tương tự như các phản hồi điều kiện đã xem xét trong phần trước. Để biết thêm thông tin, xem Khai thác SQL injection mù bằng cách kích hoạt các lỗi điều kiện.
+- Bạn có thể kích hoạt các thông báo lỗi mà hiển thị dữ liệu được trả về bởi truy vấn. Điều này thực tế biến các lỗ hổng SQL injection mù trở thành các lỗ hổng có thể nhìn thấy. Để biết thêm thông tin, hãy xem Trích xuất dữ liệu nhạy cảm qua các thông báo lỗi SQL chi tiết.
+
+## Khai thác SQL injection mù bằng cách kích hoạt lỗi điều kiện
+
+Một số ứng dụng thực hiện các truy vấn SQL nhưng hành vi của chúng không thay đổi, bất kể truy vấn có trả về dữ liệu hay không. Kỹ thuật trong phần trước sẽ không hiệu quả, vì việc tiêm các điều kiện boolean khác nhau không tạo ra sự khác biệt đối với phản hồi của ứng dụng.
+
+Thường có thể khiến ứng dụng trả về một phản hồi khác nhau tùy thuộc vào việc có xảy ra lỗi SQL hay không. Bạn có thể chỉnh sửa truy vấn để nó gây ra lỗi cơ sở dữ liệu chỉ khi điều kiện là đúng. Rất thường xuyên, một lỗi không được xử lý do cơ sở dữ liệu ném ra gây ra một số khác biệt trong phản hồi của ứng dụng, chẳng hạn như một thông báo lỗi. Điều này cho phép bạn suy ra tính đúng đắn của điều kiện đã truyền vào.
+
+
