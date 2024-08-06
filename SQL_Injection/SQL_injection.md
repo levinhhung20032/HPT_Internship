@@ -781,7 +781,7 @@ Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các c�
 ```
 
 11. Lần này, ta sẽ chọn *Attack type* là `Cluster bomb` để thực hiện tấn công vào 2 vị trí payload (ký hiệu §§) cùng 1 lúc. Chuyển qua tab **Payloads**, ở *Payload set* đầu tiên, ta sẽ chọn *Payload type* là `Numbers` chạy từ 1 đến 20 để duyệt toàn bộ vị trí của mật khẩu. Ở *Payload set* thứ 2, ta sẽ chọn *Payload type* là `Brute forcer`, chọn *Min length* và *Max length* là 1, sau đó chọn **Start attack** để thực hiện tấn công.
-12. Với bảng thông tin được hiển thị, chuột phải vào *Payload 1* và chọn *Sort>Ascending*, sau đó chuột phải vào *Payload 2* và chọn *Sort>Descending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `qfmf8cj7yk08tzuhcqnh`.
+12. Với bảng thông tin được hiển thị, chuột phải vào `Payload 1` và chọn *Sort>Ascending*, sau đó chuột phải vào `Welcome...` và chọn *Sort>Descending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `qfmf8cj7yk08tzuhcqnh`.
 
 ![alt text](images/37.png)
 
@@ -802,4 +802,182 @@ Một số ứng dụng thực hiện các truy vấn SQL nhưng hành vi của 
 
 Thường có thể khiến ứng dụng trả về một phản hồi khác nhau tùy thuộc vào việc có xảy ra lỗi SQL hay không. Bạn có thể chỉnh sửa truy vấn để nó gây ra lỗi cơ sở dữ liệu chỉ khi điều kiện là đúng. Rất thường xuyên, một lỗi không được xử lý do cơ sở dữ liệu ném ra gây ra một số khác biệt trong phản hồi của ứng dụng, chẳng hạn như một thông báo lỗi. Điều này cho phép bạn suy ra tính đúng đắn của điều kiện đã truyền vào.
 
+Để xem cách này hoạt động, giả sử rằng hai yêu cầu được gửi với các giá trị cookie TrackingId lần lượt như sau:
 
+```sql
+xyz' AND (SELECT CASE WHEN (1=2) THEN 1/0 ELSE 'a' END)='a
+xyz' AND (SELECT CASE WHEN (1=1) THEN 1/0 ELSE 'a' END)='a
+```
+
+Các đầu vào này sử dụng từ khóa `CASE` để kiểm tra một điều kiện và trả về một biểu thức khác nhau tùy thuộc vào việc biểu thức đó đúng hay sai:
+
+- Với đầu vào đầu tiên, biểu thức `CASE` được đánh giá là `a`, không gây ra lỗi.
+- Với đầu vào thứ hai, biểu thức `CASE` được đánh giá là 1/0, gây ra lỗi chia cho 0.
+
+Nếu lỗi này gây ra sự khác biệt trong phản hồi HTTP của ứng dụng, bạn có thể sử dụng điều này để xác định xem điều kiện đã tiêm có đúng hay không.
+
+Sử dụng kỹ thuật này, bạn có thể trích xuất dữ liệu bằng cách kiểm tra từng ký tự một:
+
+```sql
+xyz' AND (SELECT CASE WHEN (Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') THEN 1/0 ELSE 'a' END FROM Users)='a
+```
+
+> ## Lưu ý
+> Có nhiều cách khác nhau để kích hoạt lỗi điều kiện, và các kỹ thuật khác nhau hoạt động tốt nhất trên các loại cơ sở dữ liệu khác nhau. Để biết thêm chi tiết, hãy xem bảng cheat sheet về SQL injection.
+
+# Lab: Blind SQL injection with conditional errors
+
+## Mô tả bài lab
+
+Bài lab này chứa một lỗ hổng blind SQL injection. Ứng dụng sử dụng một cookie theo dõi cho mục đích phân tích, và thực hiện một truy vấn SQL chứa giá trị của cookie đã được gửi.
+
+Kết quả của truy vấn SQL không được trả về và ứng dụng không phản hồi khác biệt dựa trên việc truy vấn có trả về bất kỳ hàng nào hay không. Nếu truy vấn SQL gây ra lỗi, thì ứng dụng sẽ trả về một thông báo lỗi tùy chỉnh.
+
+Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột là `username` và `password`. Bạn cần khai thác lỗ hổng blind SQL injection để tìm ra mật khẩu của người dùng `administrator`.
+
+Để giải quyết phòng thí nghiệm, hãy đăng nhập bằng người dùng `administrator`.
+
+## Các bước thực hiện
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![resize](images/39.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một filter bất kỳ để nhận gói tin, ở đây tôi chọn *Gifts*
+5. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Repeater* và *Action>Send to Intruder*, sau đó chuyển sang tab **Repeater**.
+
+![alt text](images/40.png)
+
+6. Xác nhận rằng ứng dụng đang gán `TrackingId` cho chúng ta là `fR0EUzEygDeLIwmH`, ta có thể thêm vào sau đó một số thông tin để thực hiện tấn công SQL injection. Được biết ứng dụng không trả về bất kỳ cột thông tin nào từ truy vấn SQL, vậy nên ta cần nối ký tự vào `TrackingId` này để tạo thông báo lỗi. Trước hết ta cần xác nhận loại cơ sở dữ liệu đang được nhắm tới, ta có thể thực hiện điều đó bằng cách thêm `'+'` hoặc `'||'` vào phần cuối của `TrackingId`, từ đây biết được `'||'` không phát sinh lỗi và xác định được ứng dụng sử dụng cơ sở dữ liệu Oracle.
+
+7. Di chuyển sang tab **Intruder**, bài lab đã cho chúng ta biết trong cơ sở dữ liệu của ứng dụng có một bảng `users` có chứa cột `username` và `password`, từ đây ta có thể thực hiện tấn công bằng gói tin như sau để xác định độ dài mật khẩu của người dùng `administrator`, gói tin sẽ tạo lỗi *divide by zero* nếu độ dài mật khẩu không chính xác và ứng dụng sẽ chạy bình thường nếu độ dài chính xác:
+```
+'||(SELECT CASE WHEN LENGTH(password)=§§ THEN '' ELSE TO_CHAR(1/0) END FROM users WHERE username='administrator')||'
+```
+8. Chuyển sang tab **Payloads** để chỉnh sửa gói tin truyền vào mỗi lần thực hiện tấn công. Chọn *Payload type* là `Numbers` và điều chỉnh cho thông tin truyền vào sẽ chạy từ 1 đến 30.
+
+![alt text](images/41.png)
+
+8. Chuyển sang tab **Settings** và di chuyển tới *Grep - Match*, chọn *Flag result...* để đánh dấu các kết quả có từ trùng khớp, sau đó chọn *Clear>Yes* để xoá toàn bộ thông tin hiện có trong danh sách. Cuối cùng thêm vào `OK` và bỏ tích ở *Exclude HTTP headers*, điều này giúp ta dễ dàng xác định khi nào ứng dụng hoạt động bình thường (trả về HTTP header `OK`). Chọn **Start attack** để bắt đầu thực hiện tấn công.
+
+9. Bảng kết quả sẽ xuất hiện và hiển thị độ dài của phản hồi trong mỗi lần gửi. Ta có thể thấy độ dài này thay đổi khi tham số truyền vào lớn hơn 19, có thể kết luận độ dài mật khẩu là 20.
+
+![alt text](images/42.png)
+
+10. Sau khi biết được độ dài của mật khẩu, ta sẽ thực hiện Brute Force mật khẩu chính xác của người dùng `administrator`. Được biết mật khẩu sẽ chỉ chứa chữ cái thường và chữ số, ta chuyển về tab **Positions** sử dụng gói tin như sau để tấn công:
+
+```
+'||(SELECT CASE WHEN SUBSTR(password,§§,1)='§§' THEN '' ELSE TO_CHAR(1/0) END FROM users WHERE username='administrator')||'
+```
+
+11. Lần này, ta sẽ chọn *Attack type* là `Cluster bomb` để thực hiện tấn công vào 2 vị trí payload (ký hiệu §§) cùng 1 lúc. Chuyển qua tab **Payloads**, ở *Payload set* đầu tiên, ta sẽ chọn *Payload type* là `Numbers` chạy từ 1 đến 20 để duyệt toàn bộ vị trí của mật khẩu. Ở *Payload set* thứ 2, ta sẽ chọn *Payload type* là `Brute forcer`, chọn *Min length* và *Max length* là 1, sau đó chọn **Start attack** để thực hiện tấn công.
+12. Với bảng thông tin được hiển thị, chuột phải vào *Payload 1* và chọn *Sort>Ascending*, sau đó chuột phải vào *OK* và chọn *Sort>Descending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `llwv4re8t5s0l7dd701u`.
+
+![alt text](images/43.png)
+
+13. Quay trở lại tab **Proxy**, chọn **Intercept is on** để chuyển nó về **Intercept is off**, sau đó chọn *My account* để mở giao diện đăng nhập. Sử dụng tên người dùng là `administrator` và mật khẩu là `llwv4re8t5s0l7dd701u`. Sau khi đăng nhập thành công, ứng dụng sẽ thông báo hoàn thành bài lab.
+
+![alt text](images/44.png)
+
+# Trích xuất dữ liệu nhạy cảm thông qua các thông báo lỗi SQL chi tiết
+
+Việc cấu hình sai cơ sở dữ liệu đôi khi dẫn đến các thông báo lỗi chi tiết. Những thông tin này có thể hữu ích cho kẻ tấn công. Ví dụ, hãy xem xét thông báo lỗi sau đây, xuất hiện sau khi chèn một dấu nháy đơn vào tham số id:
+```
+Unterminated string literal started at position 52 in SQL SELECT * FROM tracking WHERE id = '''. Expected char
+```
+Điều này cho thấy truy vấn đầy đủ mà ứng dụng đã tạo ra bằng cách sử dụng đầu vào của chúng ta. Chúng ta có thể thấy rằng trong trường hợp này, chúng ta đang chèn vào một chuỗi được bao quanh bởi dấu nháy đơn trong một câu lệnh `WHERE`. Điều này giúp dễ dàng hơn trong việc xây dựng một truy vấn hợp lệ chứa mã độc. Việc chú thích phần còn lại của truy vấn sẽ ngăn không cho dấu nháy đơn thừa làm hỏng cú pháp.
+
+Thỉnh thoảng, bạn có thể khiến ứng dụng tạo ra thông báo lỗi chứa một số dữ liệu được trả về bởi truy vấn. Điều này hiệu quả biến một lỗ hổng SQL injection ẩn thành một lỗ hổng rõ ràng.
+
+Bạn có thể sử dụng hàm `CAST()` để đạt được điều này. Nó cho phép bạn chuyển đổi một kiểu dữ liệu sang kiểu dữ liệu khác. Ví dụ, hãy tưởng tượng một truy vấn chứa câu lệnh sau:
+```
+CAST((SELECT example_column FROM example_table) AS int)
+```
+Thường thì, dữ liệu mà bạn đang cố gắng đọc là một chuỗi ký tự. Việc cố gắng chuyển đổi nó sang một kiểu dữ liệu không tương thích, chẳng hạn như một số nguyên (`int`), có thể gây ra lỗi tương tự như sau:
+```
+ERROR: invalid input syntax for type integer: "Example data"
+```
+Loại truy vấn này cũng có thể hữu ích nếu một giới hạn ký tự ngăn bạn kích hoạt các phản hồi có điều kiện.
+
+# Lab: Visible error-based SQL injection
+
+## Mô tả bài lab
+
+Bài lab này chứa một lỗ hổng SQL injection. Ứng dụng sử dụng cookie theo dõi để phân tích, và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi. Kết quả của truy vấn SQL không được trả về.
+
+Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột tên là `username` và `password`. Để giải quyết phòng thí nghiệm này, hãy tìm cách làm rò rỉ mật khẩu cho người dùng `administrator`, sau đó đăng nhập vào tài khoản đó.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**, chọn **Open browser**, sau đó truy cập vào URL của bài lab và quay lại với giao diện của BurpSuite.
+3. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Repeater*, sau đó chuyển sang tab **Repeater**.
+4. Chọn **Send** để gửi thử gói tin một lần và chọn chế độ hiển thị cho phía phẩn hồi là **Render**.
+
+![alt text](images/45.png)
+
+5. Thêm `'` vào sau giá trị của `TrackingId` sau đó chọn **Send** để thử nghiệm lỗi của ứng dụng.
+
+![alt text](images/46.png)
+
+6. Có thể thấy, lỗi đã hiển thị chi tiết truy vấn SQL mà cơ sở dữ liệu đã thực hiện, ta sẽ bắt đầu làm việc từ đây. Ta đang can thiệp vào mệnh đề `WHERE` nên ta cần nội dung gói tin sẽ trả về dạng `boolean`, ví dụ như:
+```
+' AND 1=(SELECT 1)--
+```
+- `SELECT 1` sẽ trả về giá trị là `1`, khiến mệnh đề đúng và `--` sử dụng để loại bỏ dâu `'` trong truy vấn tránh gặp lỗi.
+7. Vì ứng dụng trả về lỗi chi tiết của truy vấn SQL, ta có thể sử dụng điều này để khai thác thông tin nhạy cảm khi đã biết có tồn tại một bảng `users` chứ `username` và `password`. Trong cơ sở dữ liệu, mật khẩu người dùng sẽ có kiểu dữ liệu là `char`, ta có thể sử dụng ```CAST((SELECT username FROM users LIMIT 1) as int)``` để phát sinh lỗi sai định dạng.
+
+![alt text](images/47.png)
+
+8. Từ thông báo lỗi ta có thể thấy người dùng đầu tiên trong bảng `users` là `administrator`. Sử dụng một gói tin tương tự ta có thể khai thác được mật khẩu của người dùng này. Ta có thể quay lại tab **Proxy** và sử dụng gói tin sau thay vào giá trị của `TrackingId` để hiển thị mật khẩu lên màn hình qua thông báo lỗi.
+
+```
+' AND 1=CAST((SELECT password FROM users LIMIT 1) as int)--
+```
+
+9. Sau khi chọn **Forward**, chọn **Intercept is on** để chuyển nó về **Intercept is off** và chuyển qua giao diện ứng dụng, ta sẽ nhận được mật khẩu của người dùng `administrator` là `ibok9hcafpt1c81c25uz`.
+
+![alt text](images/48.png)
+
+10. Reload ứng dụng, sau đó chọn **My account** và đăng nhập bằng thông tin đăng nhập vừa nhận được. Ưng dụng sẽ hiển thị đăng nhập thành công và thông báo hoàn thành bài lab.
+
+![alt text](images/49.png)
+
+# Khai thác lỗ hổng blind SQL injection bằng cách kích hoạt độ trễ thời gian
+
+Nếu ứng dụng bắt được các lỗi cơ sở dữ liệu khi truy vấn SQL được thực thi và xử lý chúng một cách trơn tru, sẽ không có bất kỳ sự khác biệt nào trong phản hồi của ứng dụng. Điều này có nghĩa là kỹ thuật trước đó để gây ra lỗi có điều kiện sẽ không hiệu quả.
+
+Trong tình huống này, thường có thể khai thác lỗ hổng blind SQL injection bằng cách kích hoạt độ trễ thời gian tùy thuộc vào việc điều kiện chèn vào là đúng hay sai. Vì các truy vấn SQL thường được xử lý đồng bộ bởi ứng dụng, việc trì hoãn thực thi truy vấn SQL cũng sẽ trì hoãn phản hồi HTTP. Điều này cho phép bạn xác định tính đúng đắn của điều kiện chèn vào dựa trên thời gian nhận được phản hồi HTTP.
+
+Các kỹ thuật để kích hoạt độ trễ thời gian là cụ thể cho từng loại cơ sở dữ liệu được sử dụng. Ví dụ, trên Microsoft SQL Server, bạn có thể sử dụng các câu lệnh sau để kiểm tra một điều kiện và kích hoạt độ trễ tùy thuộc vào việc biểu thức là đúng hay sai:
+
+```
+'; IF (1=2) WAITFOR DELAY '0:0:10'--
+'; IF (1=1) WAITFOR DELAY '0:0:10'--
+```
+
+Câu lệnh đầu tiên không kích hoạt độ trễ, vì điều kiện 1=2 là sai.
+Câu lệnh thứ hai kích hoạt độ trễ 10 giây, vì điều kiện 1=1 là đúng.
+Sử dụng kỹ thuật này, chúng ta có thể truy xuất dữ liệu bằng cách kiểm tra từng ký tự một:
+
+```
+'; IF (SELECT COUNT(Username) FROM Users WHERE Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') = 1 WAITFOR DELAY '0:0:{delay}'--
+```
+
+> ## Lưu ý
+> Có nhiều cách để kích hoạt độ trễ thời gian trong các truy vấn SQL, và các kỹ thuật khác nhau áp dụng cho các loại cơ sở dữ liệu khác nhau. Để biết thêm chi tiết, hãy xem bảng gian lận SQL injection.
+
+# Lab: Blind SQL injection with time delays and information retrieval
+
+## Mô tả bài lab
+
+Phòng thí nghiệm này chứa một lỗ hổng blind SQL injection. Ứng dụng sử dụng cookie theo dõi để phân tích và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi.
+
+Kết quả của truy vấn SQL không được trả về và ứng dụng không phản hồi khác nhau dựa trên việc truy vấn có trả về bất kỳ hàng nào hay gây ra lỗi. Tuy nhiên, vì truy vấn được thực thi đồng bộ, có thể kích hoạt độ trễ thời gian có điều kiện để suy ra thông tin.
+
+Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột tên là `username` và `password`. Bạn cần khai thác lỗ hổng blind SQL injection để tìm ra mật khẩu của người dùng `administrator`.
+
+Để giải quyết phòng thí nghiệm này, hãy đăng nhập vào tài khoản người dùng `administrator`.
+
+## Các bước thực hiện
