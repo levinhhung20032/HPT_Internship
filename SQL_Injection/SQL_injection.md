@@ -1157,3 +1157,48 @@ Cơ sở dữ liệu chứa một bảng `users`, trong đó có tên người d
 
 ## Các bước thực hiện
 
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+3. Chọn một mặt hàng bất kỳ, sau đó kéo xuống cuối trang và chọn **Check Stock**.
+4. Khi chuyển sang tab *Proxy>HTTP history*, ta sẽ thấy một gói tin POST `/product/stock`. Chuột phải và chọn **Send to Repeater**, sau đó chuyển qua tab **Repeater**.
+
+![alt text](images/57.png)
+
+5. Có thể thấy, ứng dụng sử dụng `productId` và `storeId` để thực hiện truy vấn. Từ điều này ta có thể mường tượng cấu trúc dữ liệu được thiết kế để mỗi cửa hàng sẽ là một bảng riêng, chứa nhiều `productId` và bản thân bảng đó sẽ có một `storeId`. Điều này đồng nghĩa với việc có thể truy vấn các bảng khác từ mục `<storeId>`.
+6. Được biết truy vấn sẽ chỉ trả về 1 cột, ta sẽ sử dụng `UNION SELECT NULL` nối tiếp vào giá trị hiện có của `storeId` và chọn **Send** để thử nghiệm việc lấy thông tin.
+7. Ứng dụng sẽ hiện thông báo `"Attack detected"` và không trả về kết quả. Ta có thể khắc phục điều này bằng một Extension có tên là Hackvertor, bôi đen giá trị của `storeId`, chuột phải và chọn *Extensions>Hackvertor>Encode>hex_entities*. Lần này khi chọn **Send**, ứng dụng sẽ trả về giá trị `null` phía sau số lượng sản phẩm.
+8. Thay đổi thông tin gói tin để thực hiện lấy thông tin đăng nhập của người dùng như sau:
+```sql
+UNION SELECT password FROM users WHERE username='administrator'
+```
+9. Sau khi chọn **Send**, ứng dụng sẽ trả về mật khẩu của người dùng `administrator`. Chọn **My account** trên giao diện ứng dụng và đăng nhập bằng thông tin vừa nhận được, ứng dụng sẽ thông báo đăng nhập thành công và hoàn thành bài lab.
+
+![alt text](images/58.png)
+
+# **Tấn công SQL injection bậc hai**
+
+SQL injection bậc nhất xảy ra khi ứng dụng xử lý đầu vào từ yêu cầu HTTP và kết hợp đầu vào này vào một truy vấn SQL theo cách không an toàn.
+
+SQL injection bậc hai xảy ra khi ứng dụng nhận đầu vào từ yêu cầu HTTP và lưu trữ nó để sử dụng sau này. Điều này thường được thực hiện bằng cách đặt đầu vào vào cơ sở dữ liệu, nhưng không có lỗ hổng xảy ra tại thời điểm dữ liệu được lưu trữ. Sau đó, khi xử lý một yêu cầu HTTP khác, ứng dụng truy xuất dữ liệu đã lưu và kết hợp nó vào một truy vấn SQL theo cách không an toàn. Vì lý do này, SQL injection bậc hai còn được gọi là SQL injection lưu trữ.
+
+SQL injection bậc hai thường xảy ra trong các tình huống khi các nhà phát triển nhận thức được các lỗ hổng SQL injection và do đó xử lý đầu vào ban đầu một cách an toàn khi đặt vào cơ sở dữ liệu. Khi dữ liệu sau đó được xử lý, nó được coi là an toàn vì trước đó đã được đặt vào cơ sở dữ liệu một cách an toàn. Tại thời điểm này, dữ liệu được xử lý theo cách không an toàn, vì nhà phát triển sai lầm khi cho rằng nó đáng tin cậy.
+
+# **Cách ngăn chặn SQL injection**
+
+Bạn có thể ngăn chặn hầu hết các trường hợp SQL injection bằng cách sử dụng truy vấn tham số thay vì ghép chuỗi trong truy vấn. Những truy vấn tham số này còn được gọi là "prepared statements".
+
+Đoạn mã sau đây dễ bị tấn công SQL injection vì đầu vào của người dùng được ghép trực tiếp vào truy vấn:
+
+```java
+String query = "SELECT * FROM products WHERE category = '"+ input + "'";
+Statement statement = connection.createStatement();
+ResultSet resultSet = statement.executeQuery(query);
+```
+
+Bạn có thể viết lại đoạn mã này theo cách ngăn chặn đầu vào của người dùng can thiệp vào cấu trúc truy vấn:
+
+```java
+PreparedStatement statement = connection.prepareStatement("SELECT * FROM products WHERE category = ?");
+statement.setString(1, input);
+ResultSet resultSet = statement.executeQuery();
+```
