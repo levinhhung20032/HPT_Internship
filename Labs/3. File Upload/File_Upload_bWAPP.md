@@ -1,4 +1,4 @@
-# bWAPP: Unrestricted File Upload
+# bWAPP: Unrestricted File Upload - security level: low
 ## Mô tả bài lab
 bWAPP (Buggy Web Application) là một ứng dụng web có nhiều lỗ hổng bảo mật, bao gồm cả lỗi bảo mật về File Upload, được thiết kế nhằm mục đích giáo dục và đào tạo về an ninh mạng. Nó được phát triển bởi nhóm bảo mật ITsec Games và là một công cụ mã nguồn mở. bWAPP giúp các nhà phát triển, người kiểm tra bảo mật (pentester), và sinh viên nghiên cứu cách thức phát hiện, khai thác và khắc phục các lỗ hổng bảo mật phổ biến trên các ứng dụng web.
 
