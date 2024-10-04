@@ -8,7 +8,7 @@ Cross-site scripting (còn được gọi là XSS) là một lỗ hổng bảo m
 Cross-site scripting hoạt động bằng cách thao túng một trang web dễ bị tổn thương để nó trả về mã JavaScript độc hại cho người dùng. Khi mã độc hại được thực thi trong trình duyệt của nạn nhân, kẻ tấn công có thể hoàn toàn kiểm soát tương tác của họ với ứng dụng.
 
 # XSS proof of concept  
-Bạn có thể xác nhận hầu hết các loại lỗ hổng XSS bằng cách tiêm một payload khiến trình duyệt của bạn thực thi một số mã JavaScript tùy ý. Việc sử dụng hàm `alert()` cho mục đích này đã trở nên phổ biến từ lâu vì nó ngắn gọn, vô hại và rất dễ nhận ra khi nó được gọi thành công. Trên thực tế, bạn sẽ giải quyết phần lớn các phòng thí nghiệm XSS của chúng tôi bằng cách gọi `alert()` trong trình duyệt của nạn nhân giả lập.
+Bạn có thể xác nhận hầu hết các loại lỗ hổng XSS bằng cách truyền vào một payload khiến trình duyệt của bạn thực thi một số mã JavaScript tùy ý. Việc sử dụng hàm `alert()` cho mục đích này đã trở nên phổ biến từ lâu vì nó ngắn gọn, vô hại và rất dễ nhận ra khi nó được gọi thành công. Trên thực tế, bạn sẽ giải quyết phần lớn các phòng thí nghiệm XSS của chúng tôi bằng cách gọi `alert()` trong trình duyệt của nạn nhân giả lập.
 
 Tuy nhiên, nếu bạn sử dụng Chrome, có một trở ngại nhỏ. Từ phiên bản 92 trở đi (20 tháng 7, 2021), các iframe chéo nguồn bị ngăn không gọi được `alert()`. Vì chúng được sử dụng để xây dựng một số cuộc tấn công XSS nâng cao, thỉnh thoảng bạn sẽ cần sử dụng payload PoC thay thế. Trong trường hợp này, chúng tôi khuyến nghị sử dụng hàm `print()`.
 
