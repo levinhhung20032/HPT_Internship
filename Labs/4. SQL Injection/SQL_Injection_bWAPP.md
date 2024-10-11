@@ -63,3 +63,4 @@ SELECT * FROM <table of database> WHERE Title LIKE '<title>';
 
 ![alt text](images/64.png)
 
+- Với đoạn mã trong cột `password` của người dùng `bee`, ta có thể copy đoạn mã này lên một số trang xác định mã hoá (ví dụ như `https://www.dcode.fr/cipher-identifier`) để xác định kiểu mã hoá sau đó dịch ngược. Ở đây, password được cho là mã hoá bởi `SHA1`, sau khi giải mã ta có được đoạn text `bug` tương ứng với mật khẩu của người dùng `bee`.
